@@ -42,17 +42,17 @@ pub unsafe extern "C" fn main(argc: isize, argv: *const *const i8) -> isize {
     0
 }
 
-static mut IS_ABORTING: bool = false;
-
 #[panic_handler]
 fn my_panic(info: &core::panic::PanicInfo) -> ! {
+    static mut IS_PANICKING: bool = false;
+
     unsafe {
-        if IS_ABORTING {
+        if IS_PANICKING {
             let buf = b"Panicked while panicking. Aborting.\n";
             libc::write(libc::STDERR_FILENO, buf.as_ptr() as *const c_void, buf.len());
             libc::abort();
         } else {
-            IS_ABORTING = true;
+            IS_PANICKING = true;
             prelude::eprintf!("{info}\n");
         }
         libc::exit(1);

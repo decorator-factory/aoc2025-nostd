@@ -1,15 +1,17 @@
+/// Very naive solution for day 1a
 use core::ffi::CStr;
 
 use crate::prelude::*;
 
 pub fn run(path: &CStr) -> Result<(), MysteryStr<'static>> {
-    let mut lines = open_lines(path)?;
+    let mmap = open_mmap(path)?;
+    let bytes = mmap.as_slice();
 
     let mut lineno = 1;
     let mut acc: i64 = 50;
     let mut times_zero: u64 = 0;
 
-    while let Some(line) = lines.next() {
+    for line in bytes.split(|c| *c == b'\n') {
         if line.iter().all(|c| c.is_ascii_whitespace()) {
             continue;
         }
