@@ -1,0 +1,20 @@
+[package]
+name = "aoc2025-nostd"
+version = "0.1.0"
+edition = "2024"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+opt-level = "s"
+lto = "off"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[dependencies]
+libc = { version = "0.2", default-features = false }
+
+[lints.clippy]
+missing_safety_doc = "allow"
