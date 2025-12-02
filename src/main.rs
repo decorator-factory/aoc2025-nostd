@@ -1,12 +1,9 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(test), no_main)]
 #![feature(slice_split_once)]
 #![feature(int_from_ascii)]
 
-use core::ffi::{
-    CStr,
-    c_void,
-};
+use core::ffi::CStr;
 
 extern crate libc;
 
@@ -16,15 +13,10 @@ mod day2a;
 mod day2b;
 mod prelude;
 
-type DayFn = fn(path: &CStr) -> Result<(), prelude::MysteryStr<'static>>;
-
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn main(argc: isize, argv: *const *const i8) -> isize {
-    if argc == 1 {
-        // HACK
-        day2b::fake_test();
-        return 0;
-    }
+#[inline(always)]
+#[cfg_attr(test, allow(unused))]
+unsafe fn main_impl(argc: isize, argv: *const *const i8) -> isize {
+    type DayFn = fn(path: &CStr) -> Result<(), prelude::MysteryStr<'static>>;
 
     if argc != 3 {
         prelude::println_str("error: Expected exactly 2 arguments");
@@ -53,8 +45,16 @@ pub unsafe extern "C" fn main(argc: isize, argv: *const *const i8) -> isize {
     0
 }
 
+#[cfg(not(test))]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn main(argc: isize, argv: *const *const i8) -> isize {
+    unsafe { main_impl(argc, argv) }
+}
+
+#[cfg(not(test))]
 #[panic_handler]
 fn my_panic(info: &core::panic::PanicInfo) -> ! {
+    use core::ffi::c_void;
     static mut IS_PANICKING: bool = false;
 
     unsafe {

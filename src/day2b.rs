@@ -53,47 +53,63 @@ fn is_very_silly(s: &[u8]) -> bool {
     false
 }
 
-/// I couldn't make `cargo test` work :(
-pub fn fake_test() {
-    // len1
-    assert!(!is_very_silly(b"0"));
-    assert!(!is_very_silly(b"1"));
-    assert!(!is_very_silly(b"a"));
+#[cfg(test)]
+mod test {
+    use super::is_very_silly;
 
-    // len2
-    assert!(is_very_silly(b"00"));
-    assert!(is_very_silly(b"11"));
-    assert!(!is_very_silly(b"69"));
+    #[test]
+    fn len1() {
+        assert!(!is_very_silly(b"0"));
+        assert!(!is_very_silly(b"1"));
+        assert!(!is_very_silly(b"a"));
+    }
 
-    // len3
-    assert!(is_very_silly(b"777"));
-    assert!(!is_very_silly(b"420"));
-    assert!(!is_very_silly(b"001"));
-    assert!(!is_very_silly(b"010"));
-    assert!(!is_very_silly(b"100"));
-    assert!(!is_very_silly(b"110"));
+    #[test]
+    fn len2() {
+        assert!(is_very_silly(b"00"));
+        assert!(is_very_silly(b"11"));
+        assert!(!is_very_silly(b"69"));
+    }
 
-    // len4
-    assert!(is_very_silly(b"0101"));
-    assert!(is_very_silly(b"5555"));
-    assert!(!is_very_silly(b"0011"));
-    assert!(!is_very_silly(b"0001"));
+    #[test]
+    fn len3() {
+        assert!(is_very_silly(b"777"));
+        assert!(!is_very_silly(b"420"));
+        assert!(!is_very_silly(b"001"));
+        assert!(!is_very_silly(b"010"));
+        assert!(!is_very_silly(b"100"));
+        assert!(!is_very_silly(b"110"));
+    }
 
-    // len8
-    assert!(is_very_silly(b"12341234"));
-    assert!(is_very_silly(b"12121212"));
-    assert!(is_very_silly(b"22222222"));
-    assert!(!is_very_silly(b"12345678"));
+    #[test]
+    fn len4() {
+        assert!(is_very_silly(b"0101"));
+        assert!(is_very_silly(b"5555"));
+        assert!(!is_very_silly(b"0011"));
+        assert!(!is_very_silly(b"0001"));
+    }
 
-    // len14
-    assert!(is_very_silly(b"12345671234567"));
-    assert!(!is_very_silly(b"12345671234568"));
+    #[test]
+    fn len8() {
+        assert!(is_very_silly(b"12341234"));
+        assert!(is_very_silly(b"12121212"));
+        assert!(is_very_silly(b"22222222"));
+        assert!(!is_very_silly(b"12345678"));
+    }
 
-    // len16
-    assert!(is_very_silly(b"1234567812345678"));
-    assert!(is_very_silly(b"1234123412341234"));
-    assert!(is_very_silly(b"1212121212121212"));
-    assert!(is_very_silly(b"9999999999999999"));
-    assert!(!is_very_silly(b"1234123412341235"));
-    assert!(!is_very_silly(b"1234567812345679"));
+    #[test]
+    fn len14() {
+        assert!(is_very_silly(b"12345671234567"));
+        assert!(!is_very_silly(b"12345671234568"));
+    }
+
+    #[test]
+    fn len16() {
+        assert!(is_very_silly(b"1234567812345678"));
+        assert!(is_very_silly(b"1234123412341234"));
+        assert!(is_very_silly(b"1212121212121212"));
+        assert!(is_very_silly(b"9999999999999999"));
+        assert!(!is_very_silly(b"1234123412341235"));
+        assert!(!is_very_silly(b"1234567812345679"));
+    }
 }

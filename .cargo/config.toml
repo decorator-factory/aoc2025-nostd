@@ -1,8 +1,0 @@
-[build]
-rustflags = [
-    "-Z", "panic-abort-tests",
-    "-C", "panic=abort",
-]
-
-[unstable]
-build-std = ["core", "alloc", "panic_abort", "test"]
