@@ -272,3 +272,40 @@ impl<'a> From<&'a CStr> for MysteryStr<'a> {
         Self::Crusty(s)
     }
 }
+
+macro_rules! advent_of_code_impl {
+    ($e:expr) => {
+        const _: () = {
+            #[unsafe(export_name = concat!("advent_of_code_solution__", file!()))]
+            static DUMMY: $crate::prelude::DayFn = $e;
+        };
+    };
+}
+pub(crate) use advent_of_code_impl;
+
+pub type DayFn = fn(path: &CStr) -> Result<(), MysteryStr<'static>>;
+
+/// Find function solving a particular Advent of Code day.
+/// The day must be a C string like "day1a" or "day12b".
+pub(crate) fn fetch_day_solution(day: &CStr) -> Option<DayFn> {
+    let handle = unsafe { libc::dlopen(core::ptr::null(), libc::RTLD_NOW) };
+    assert!(!handle.is_null(), "We cannot open our own executable... strange");
+
+    let mut symbol_name = [c_char::default(); 1024];
+    let length = unsafe {
+        libc::snprintf(
+            symbol_name.as_mut_ptr(),
+            1024,
+            c"advent_of_code_solution__src/%s.rs".as_ptr(),
+            day,
+        )
+    };
+    if length <= 0 {
+        return None;
+    }
+
+    // Exported symbols are actually static variables of type DayFn
+    // So the symbol is a pointer to a function pointer.
+    let day_fn_ptr: *const DayFn = unsafe { libc::dlsym(handle, symbol_name.as_ptr()).cast() };
+    if day_fn_ptr.is_null() { None } else { Some(unsafe { *day_fn_ptr }) }
+}

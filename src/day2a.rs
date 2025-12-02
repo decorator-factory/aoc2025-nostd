@@ -4,7 +4,9 @@ use core::ffi::CStr;
 
 use crate::prelude::*;
 
-pub fn run(path: &CStr) -> Result<(), MysteryStr<'static>> {
+advent_of_code_impl!(run);
+
+fn run(path: &CStr) -> Result<(), MysteryStr<'static>> {
     let mmap = open_mmap(path)?;
     let bytes = mmap.as_slice();
 

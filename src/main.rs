@@ -3,10 +3,6 @@
 #![feature(slice_split_once)]
 #![feature(int_from_ascii)]
 
-use core::ffi::CStr;
-
-extern crate libc;
-
 mod day1a;
 mod day1b;
 mod day2a;
@@ -16,24 +12,15 @@ mod prelude;
 #[inline(always)]
 #[cfg_attr(test, allow(unused))]
 unsafe fn main_impl(argc: isize, argv: *const *const i8) -> isize {
-    type DayFn = fn(path: &CStr) -> Result<(), prelude::MysteryStr<'static>>;
-
     if argc != 3 {
         prelude::println_str("error: Expected exactly 2 arguments");
         return 1;
     }
-    let day = unsafe { core::ffi::CStr::from_ptr(*argv.add(1)).to_bytes() };
+    let day = unsafe { core::ffi::CStr::from_ptr(*argv.add(1)) };
     let path = unsafe { core::ffi::CStr::from_ptr(*argv.add(2)) };
 
-    let day_fn: Option<DayFn> = match day {
-        b"day1a" => Some(day1a::run),
-        b"day1b" => Some(day1b::run),
-        b"day2a" => Some(day2a::run),
-        b"day2b" => Some(day2b::run),
-        _ => None,
-    };
-    let Some(day_fn) = day_fn else {
-        prelude::eprintf!("error: invalid day specified\n");
+    let Some(day_fn) = prelude::fetch_day_solution(day) else {
+        prelude::eprintf!("error: unknown AoC day\n");
         return 1;
     };
 

@@ -1,1 +1,2 @@
-cargo build -Z build-std="core,panic_abort"
+export RUSTFLAGS="-Zexport-executable-symbols"
+cargo build -Zbuild-std="core,panic_abort"
