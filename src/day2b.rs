@@ -97,18 +97,3 @@ pub fn fake_test() {
     assert!(!is_very_silly(b"1234123412341235"));
     assert!(!is_very_silly(b"1234567812345679"));
 }
-
-#[cfg(test)] // TODO: make `cargo test` work
-mod test {
-    use super::is_very_silly;
-
-    #[test]
-    fn silly_example() {
-        assert!(is_very_silly("123123123"));
-    }
-
-    #[test]
-    fn not_silly_example() {
-        assert!(!is_very_silly("69"));
-    }
-}
