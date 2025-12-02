@@ -186,9 +186,6 @@ impl core::fmt::Write for FileWriter {
     }
 }
 
-// -------------------------
-// open_lines implementation
-//
 pub fn open_mmap(path: &CStr) -> Result<OwnedMmap, &'static CStr> {
     let fd = unsafe { libc::open(path.as_ptr(), libc::O_RDONLY) };
     if fd == -1 {
