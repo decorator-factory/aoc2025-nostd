@@ -1,22 +1,31 @@
 #![no_std]
 #![no_main]
+#![feature(slice_split_once)]
+#![feature(int_from_ascii)]
 
 use core::ffi::{
     CStr,
     c_void,
 };
 
-use crate::prelude::MysteryStr;
 extern crate libc;
 
 mod day1a;
 mod day1b;
+mod day2a;
+mod day2b;
 mod prelude;
 
-type DayFn = fn(path: &CStr) -> Result<(), MysteryStr<'static>>;
+type DayFn = fn(path: &CStr) -> Result<(), prelude::MysteryStr<'static>>;
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn main(argc: isize, argv: *const *const i8) -> isize {
+    if argc == 1 {
+        // HACK
+        day2b::fake_test();
+        return 0;
+    }
+
     if argc != 3 {
         prelude::println_str("error: Expected exactly 2 arguments");
         return 1;
@@ -27,6 +36,8 @@ pub unsafe extern "C" fn main(argc: isize, argv: *const *const i8) -> isize {
     let day_fn: Option<DayFn> = match day {
         b"day1a" => Some(day1a::run),
         b"day1b" => Some(day1b::run),
+        b"day2a" => Some(day2a::run),
+        b"day2b" => Some(day2b::run),
         _ => None,
     };
     let Some(day_fn) = day_fn else {

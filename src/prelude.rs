@@ -1,3 +1,5 @@
+#![expect(unused)]
+
 use core::{
     ffi::{
         CStr,
@@ -135,11 +137,7 @@ mod raw_ptr_writer {
             }
 
             unsafe {
-                libc::memcpy(
-                    self.ptr as *mut c_void,
-                    s.as_ptr() as *const c_void,
-                    s.len(),
-                )
+                libc::memcpy(self.ptr as *mut c_void, s.as_ptr() as *const c_void, s.len())
             };
 
             self.ptr = unsafe { self.ptr.add(s.len()) };

@@ -18,3 +18,4 @@ libc = { version = "0.2", default-features = false }
 
 [lints.clippy]
 missing_safety_doc = "allow"
+manual_is_multiple_of = "allow"

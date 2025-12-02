@@ -16,7 +16,6 @@ pub fn run(path: &CStr) -> Result<(), MysteryStr<'static>> {
             continue;
         }
 
-        printf!("Got line: {line:?}\n");
         let Some(action) = parse_line(line) else {
             return Err(sprintf_leak!("Error in line {lineno} (file {path:?})").into());
         };
