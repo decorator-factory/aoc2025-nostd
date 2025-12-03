@@ -186,6 +186,16 @@ impl core::fmt::Write for FileWriter {
     }
 }
 
+pub fn get_nanos() -> i64 {
+    let mut timespec = MaybeUninit::<libc::timespec>::uninit();
+    let rv = unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC, timespec.as_mut_ptr()) };
+    assert!(rv != -1, "failed to get time: {:?}", unsafe {
+        strerror_leak(get_errno().unwrap_unchecked())
+    });
+    let timespec = unsafe { timespec.assume_init() };
+    timespec.tv_sec * 1_000_000_000 + timespec.tv_nsec
+}
+
 pub fn open_mmap(path: &CStr) -> Result<OwnedMmap, &'static CStr> {
     let fd = unsafe { libc::open(path.as_ptr(), libc::O_RDONLY) };
     if fd == -1 {
@@ -214,10 +224,13 @@ pub fn open_mmap(path: &CStr) -> Result<OwnedMmap, &'static CStr> {
             libc::MAP_PRIVATE,
             fd,
             0i64,
-        ) as *mut u8
+        )
     };
+    unsafe {
+        libc::madvise(start_ptr, file_length, libc::MADV_WILLNEED | libc::MADV_SEQUENTIAL);
+    }
 
-    Ok(unsafe { OwnedMmap::new(start_ptr, file_length) })
+    Ok(unsafe { OwnedMmap::new(start_ptr.cast(), file_length) })
 }
 
 pub struct OwnedMmap {

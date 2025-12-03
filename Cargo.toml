@@ -8,8 +8,9 @@ panic = "abort"
 
 [profile.release]
 lto = "fat"
-opt-level = "s"
+opt-level = 3
 codegen-units = 1
+# debug = "full"
 panic = "abort"
 
 [dependencies]

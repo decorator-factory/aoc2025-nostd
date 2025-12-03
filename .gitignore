@@ -1,2 +1,6 @@
 /target
 vgcore.*
+perf.data
+perf.data*
+gecko_profile.json
+*.scratch
