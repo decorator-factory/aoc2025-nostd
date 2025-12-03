@@ -10,8 +10,11 @@ panic = "abort"
 lto = "fat"
 opt-level = 3
 codegen-units = 1
-# debug = "full"
 panic = "abort"
+
+[profile.profiling]
+inherits = "release"
+debug = "full"
 
 [dependencies]
 libc = { version = "0.2", default-features = false }
@@ -19,3 +22,4 @@ libc = { version = "0.2", default-features = false }
 [lints.clippy]
 missing_safety_doc = "allow"
 manual_is_multiple_of = "allow"
+print_with_newline = "allow"

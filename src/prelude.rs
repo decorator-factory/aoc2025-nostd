@@ -61,7 +61,19 @@ macro_rules! printf {
         $crate::prelude::printf_impl(::core::format_args!($($arg)*)).unwrap();
     };
 }
+#[cfg(not(test))]
 pub(crate) use printf;
+#[cfg(test)]
+pub(crate) use std::print as printf;
+
+macro_rules! debugf {
+    ($($arg:tt)*) => {
+        if cfg!(debug_assertions) {
+            printf!($($arg)*);
+        }
+    };
+}
+pub(crate) use debugf;
 
 macro_rules! eprintf {
     ($($arg:tt)*) => {
@@ -254,6 +266,38 @@ impl OwnedMmap {
 impl Drop for OwnedMmap {
     fn drop(&mut self) {
         unsafe { libc::munmap(self.ptr as *mut c_void, self.length) };
+    }
+}
+
+pub struct Malloc {
+    ptr: *mut u8,
+    length: usize,
+}
+
+impl Malloc {
+    pub fn as_bytes(&self) -> &[u8] {
+        unsafe { slice::from_raw_parts(self.ptr, self.length) }
+    }
+
+    pub fn zeroed(length: usize) -> Self {
+        unsafe {
+            use core::mem::MaybeUninit;
+
+            let ptr: *mut u8 = libc::calloc(length, 1).cast();
+            assert!(!ptr.is_null(), "download more RAM");
+            Self { ptr, length }
+        }
+    }
+
+    pub fn clone(bytes: &[u8]) -> Self {
+        unsafe {
+            use core::mem::MaybeUninit;
+
+            let ptr: *mut u8 = libc::malloc(bytes.len()).cast();
+            assert!(!ptr.is_null(), "download more RAM");
+            libc::memcpy(ptr.cast(), bytes.as_ptr().cast(), bytes.len());
+            Self { ptr, length: bytes.len() }
+        }
     }
 }
 

@@ -2,6 +2,8 @@
 #![cfg_attr(not(test), no_main)]
 #![feature(slice_split_once)]
 #![feature(int_from_ascii)]
+#![feature(portable_simd)]
+#![feature(stmt_expr_attributes)]
 
 mod day1a;
 mod day1b;
