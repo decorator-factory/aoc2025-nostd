@@ -1,4 +1,4 @@
-// Naive solution for day 3a
+// Slightly optimized solution for day 3a
 
 use core::simd::prelude::*;
 

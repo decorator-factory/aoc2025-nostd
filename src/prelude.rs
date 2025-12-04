@@ -1,4 +1,4 @@
-#![expect(unused)]
+#![allow(dead_code)]
 
 use core::{
     ffi::{
@@ -56,6 +56,7 @@ pub fn strerror_leak(errno: NonZero<c_int>) -> &'static CStr {
 
 // printf and friends
 
+#[allow(unused_macros)]
 macro_rules! printf {
     ($($arg:tt)*) => {
         $crate::prelude::printf_impl(::core::format_args!($($arg)*)).unwrap();
@@ -66,6 +67,7 @@ pub(crate) use printf;
 #[cfg(test)]
 pub(crate) use std::print as printf;
 
+#[allow(unused_macros)]
 macro_rules! debugf {
     ($($arg:tt)*) => {
         if cfg!(debug_assertions) {
@@ -73,6 +75,7 @@ macro_rules! debugf {
         }
     };
 }
+#[allow(unused_imports)]
 pub(crate) use debugf;
 
 macro_rules! eprintf {
@@ -82,11 +85,13 @@ macro_rules! eprintf {
 }
 pub(crate) use eprintf;
 
+#[allow(unused_macros)]
 macro_rules! fdprintf {
     ($dst:expr, $($arg:tt)*) => {
         $crate::prelude::fdprintf_impl($expr, ::core::format_args!($($arg)*)).unwrap();
     };
 }
+#[allow(unused_imports)]
 pub(crate) use fdprintf;
 
 macro_rules! sprintf_leak {
@@ -279,10 +284,35 @@ impl Malloc {
         unsafe { slice::from_raw_parts(self.ptr, self.length) }
     }
 
+    pub fn as_mut_bytes(&mut self) -> &mut [u8] {
+        unsafe { slice::from_raw_parts_mut(self.ptr, self.length) }
+    }
+
+    /// # Safety
+    ///
+    pub unsafe fn uninit(length: usize) -> Self {
+        unsafe {
+            let ptr: *mut u8 = libc::malloc(length).cast();
+            assert!(!ptr.is_null(), "download more RAM");
+            Self { ptr, length }
+        }
+    }
+
+    pub fn copy_from(&mut self, src: &[u8]) {
+        assert!(
+            src.len() >= self.length,
+            "src is of length: {}, but our memory is of length: {}",
+            src.len(),
+            self.length
+        );
+
+        unsafe {
+            libc::memcpy(self.ptr.cast(), src.as_ptr().cast(), self.length);
+        }
+    }
+
     pub fn zeroed(length: usize) -> Self {
         unsafe {
-            use core::mem::MaybeUninit;
-
             let ptr: *mut u8 = libc::calloc(length, 1).cast();
             assert!(!ptr.is_null(), "download more RAM");
             Self { ptr, length }
@@ -290,13 +320,95 @@ impl Malloc {
     }
 
     pub fn clone(bytes: &[u8]) -> Self {
-        unsafe {
-            use core::mem::MaybeUninit;
+        let mut mem = unsafe { Self::uninit(bytes.len()) };
+        mem.copy_from(bytes);
+        mem
+    }
+}
 
-            let ptr: *mut u8 = libc::malloc(bytes.len()).cast();
-            assert!(!ptr.is_null(), "download more RAM");
-            libc::memcpy(ptr.cast(), bytes.as_ptr().cast(), bytes.len());
-            Self { ptr, length: bytes.len() }
+pub struct ArrayVec<T, const N: usize> {
+    data: [MaybeUninit<T>; N],
+    length: usize,
+}
+
+impl<T, const N: usize> ArrayVec<T, N> {
+    pub fn new() -> Self {
+        Self { data: [const { MaybeUninit::uninit() }; N], length: 0 }
+    }
+
+    pub fn len(&self) -> usize {
+        self.length
+    }
+
+    pub fn try_push(&mut self, value: T) -> Result<(), T> {
+        if self.length >= N {
+            Err(value)
+        } else {
+            self.data[self.length] = MaybeUninit::new(value);
+            self.length += 1;
+            Ok(())
+        }
+    }
+
+    pub fn push(&mut self, value: T) {
+        self.try_push(value).unwrap_or_else(|_| panic!("ArrayVec<_, {}> overflow", N));
+    }
+
+    pub fn as_slice(&self) -> &[T] {
+        let start = self.data.as_ptr();
+        unsafe { slice::from_raw_parts(start.cast(), self.length) }
+    }
+
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        let start = self.data.as_mut_ptr();
+        unsafe { slice::from_raw_parts_mut(start.cast(), self.length) }
+    }
+}
+
+impl<T, const N: usize> ArrayVec<T, N>
+where
+    T: Copy,
+{
+    pub fn clear(&mut self) {
+        self.length = 0;
+    }
+}
+
+#[cfg(test)]
+mod array_vec_tests {
+    use super::ArrayVec;
+
+    #[test]
+    fn iterate() {
+        let mut foo = ArrayVec::<u8, 10>::new();
+        foo.push(100);
+        foo.push(20);
+        foo.push(0);
+        foo.push(69);
+        let mut things = [1u8; 4];
+        for (i, &x) in foo.as_slice().iter().enumerate() {
+            things[i] = x;
+        }
+        assert_eq!(things, [100, 20, 0, 69]);
+    }
+
+    #[test]
+    fn thanos_snap() {
+        let mut foo = ArrayVec::<u8, 10>::new();
+        foo.push(100);
+        foo.push(20);
+        foo.push(0);
+        foo.push(69);
+        assert_eq!(foo.as_slice(), &[100, 20, 0, 69]);
+        foo.clear();
+        assert_eq!(foo.as_slice(), &[]);
+    }
+}
+
+impl<T, const N: usize> Drop for ArrayVec<T, N> {
+    fn drop(&mut self) {
+        for uninit in self.data.iter_mut().take(self.length) {
+            unsafe { uninit.assume_init_drop() };
         }
     }
 }
