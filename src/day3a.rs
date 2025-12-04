@@ -3,11 +3,22 @@
 use core::simd::prelude::*;
 
 // ferris_elf compatible
-pub fn run(bytes: &[u8]) -> u64 {
-    let mut total = 0u64;
+pub fn run(bytes: &[u8]) -> u32 {
+    // For this problem, single threaded is faster
+    let mut total = 0u32;
     let bytes = bytes.trim_ascii_end();
-    for line in bytes.split(|c| *c == b'\n') {
-        total += get_line_joltage(line) as u64;
+
+    let mut last = 0usize;
+    for uwu in memchr::memchr_iter(b'\n', bytes) {
+        let line = unsafe { bytes.get_unchecked(last..uwu) };
+        total += get_line_joltage(line) as u32;
+        last = uwu + 1;
+    }
+    if last < bytes.len() {
+        let line = unsafe { bytes.get_unchecked(last..) };
+        if !line.is_empty() {
+            total += get_line_joltage(line) as u32;
+        }
     }
     total
 }

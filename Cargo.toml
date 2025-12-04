@@ -14,10 +14,15 @@ panic = "abort"
 
 [profile.profiling]
 inherits = "release"
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+panic = "abort"
 debug = "full"
 
 [dependencies]
 libc = { version = "0.2", default-features = false }
+memchr = { version = "2", default-features = false }
 
 [lints.clippy]
 missing_safety_doc = "allow"

@@ -6,8 +6,18 @@ use core::simd::prelude::*;
 pub fn run(bytes: &[u8]) -> u64 {
     let mut total = 0u64;
     let bytes = bytes.trim_ascii_end();
-    for line in bytes.split(|c| *c == b'\n') {
+
+    let mut last = 0usize;
+    for uwu in memchr::memchr_iter(b'\n', bytes) {
+        let line = unsafe { bytes.get_unchecked(last..uwu) };
         total += get_line_joltage12(line);
+        last = uwu + 1;
+    }
+    if last < bytes.len() {
+        let line = unsafe { bytes.get_unchecked(last..) };
+        if !line.is_empty() {
+            total += get_line_joltage12(line);
+        }
     }
     total
 }
