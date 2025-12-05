@@ -213,6 +213,14 @@ pub fn get_nanos() -> i64 {
     timespec.tv_sec * 1_000_000_000 + timespec.tv_nsec
 }
 
+// it's supposed to be unsafe but whatever
+pub fn get_nanos_unchecked() -> i64 {
+    let mut timespec = MaybeUninit::<libc::timespec>::uninit();
+    unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC, timespec.as_mut_ptr()) };
+    let timespec = unsafe { timespec.assume_init() };
+    timespec.tv_nsec
+}
+
 pub fn open_mmap(path: &CStr) -> Result<OwnedMmap, &'static CStr> {
     let fd = unsafe { libc::open(path.as_ptr(), libc::O_RDONLY) };
     if fd == -1 {
@@ -369,15 +377,36 @@ pub struct ArrayVec<T, const N: usize> {
     length: usize,
 }
 
+impl<T, const N: usize> core::fmt::Debug for ArrayVec<T, N>
+where
+    T: core::fmt::Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("ArrayVec[")?;
+        let mut iter = self.as_slice().iter().peekable();
+        while let Some(x) = iter.next() {
+            f.write_fmt(format_args!("{:?}", x))?;
+
+            if iter.peek().is_some() {
+                f.write_str(", ")?;
+            }
+        }
+        f.write_str("]")
+    }
+}
+
 impl<T, const N: usize> ArrayVec<T, N> {
+    #[inline(always)]
     pub fn new() -> Self {
         Self { data: [const { MaybeUninit::uninit() }; N], length: 0 }
     }
 
+    #[inline(always)]
     pub fn len(&self) -> usize {
         self.length
     }
 
+    #[inline(always)]
     pub fn try_push(&mut self, value: T) -> Result<(), T> {
         if self.length >= N {
             Err(value)
@@ -388,15 +417,24 @@ impl<T, const N: usize> ArrayVec<T, N> {
         }
     }
 
+    #[inline(always)]
     pub fn push(&mut self, value: T) {
         self.try_push(value).unwrap_or_else(|_| panic!("ArrayVec<_, {}> overflow", N));
     }
 
+    #[inline(always)]
+    pub unsafe fn push_unchecked(&mut self, value: T) {
+        self.data[self.length] = MaybeUninit::new(value);
+        self.length += 1;
+    }
+
+    #[inline(always)]
     pub fn as_slice(&self) -> &[T] {
         let start = self.data.as_ptr();
         unsafe { slice::from_raw_parts(start.cast(), self.length) }
     }
 
+    #[inline(always)]
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         let start = self.data.as_mut_ptr();
         unsafe { slice::from_raw_parts_mut(start.cast(), self.length) }

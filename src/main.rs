@@ -2,8 +2,10 @@
 #![cfg_attr(not(test), no_main)]
 #![feature(slice_split_once)]
 #![feature(int_from_ascii)]
-#![feature(portable_simd)]
 #![feature(stmt_expr_attributes)]
+#![feature(ptr_as_ref_unchecked)]
+#![feature(portable_simd)]
+#![feature(bstr)]
 
 mod day1a;
 mod day1b;
@@ -13,6 +15,7 @@ mod day3a;
 mod day3b;
 mod day4a;
 mod day4b;
+mod day5a;
 mod prelude;
 
 #[inline(always)]
