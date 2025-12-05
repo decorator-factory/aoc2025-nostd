@@ -6,6 +6,8 @@
 #![feature(ptr_as_ref_unchecked)]
 #![feature(portable_simd)]
 #![feature(bstr)]
+#![feature(const_array)]
+#![feature(const_trait_impl)]
 
 mod day1a;
 mod day1b;

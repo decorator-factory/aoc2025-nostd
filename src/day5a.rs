@@ -1,76 +1,77 @@
-// Naive solution for day 5a
-#![allow(unused_attributes)]
-// need these for ferris_elf
-#![feature(slice_split_once)]
-#![feature(portable_simd)]
-#![feature(bstr)]
+// Slightly less naive solution for day 5a
 
 #[cfg(not(feature = "banana"))]
 use arrayvec::ArrayVec;
 
 pub fn run(raw: &[u8]) -> u16 {
-    let bounds_t0 = get_nanos_unchecked();
-    let last_dash_pos = memchr::memrchr(b'-', raw).unwrap();
-    let ranges_end =
-        memchr::memchr(b'\n', &raw[last_dash_pos + 1..]).unwrap() + last_dash_pos + 1;
+    unsafe /* :^) */ {
+        // TODO: find faster way to parse integers
+        let last_dash_pos = memchr::memrchr(b'-', raw).unwrap();
+        let ranges_end =
+            memchr::memchr(b'\n', &raw[last_dash_pos + 1..]).unwrap() + last_dash_pos + 1;
 
         let (branges, bfridge) = (&raw[..ranges_end + 1], &raw[ranges_end + 2..]);
-    let bounds_t1 = get_nanos_unchecked();
 
-    let mut range_mins = ArrayVec::<u64, 256>::new();
-    let mut range_maxs = ArrayVec::<u64, 256>::new();
-    let mut fridge = ArrayVec::<u64, 1024>::new();
+        let mut ranges = ArrayVec::<(u64, u64), 256>::new();
+        let mut fridge = ArrayVec::<u64, 1024>::new();
 
-    let ranges_t0 = get_nanos_unchecked();
-    {
-        let mut start = 0usize;
-        for pos in memchr::memchr_iter(b'\n', branges) {
-            unsafe {
+        let mut buckets = {
+            // crimes against humanity
+            let mut owo: ArrayVec<ArrayVec<u8, 16>, 2048> =
+                core::mem::MaybeUninit::zeroed().assume_init();
+            owo.set_len(1024);
+            owo
+        };
+
+        {
+            let mut start = 0usize;
+            for pos in memchr::memchr_iter(b'\n', branges) {
                 let line = branges.get_unchecked(start..pos);
                 let dash_pos = memchr::memchr(b'-', line).unwrap_unchecked();
-                let left = u64::from_ascii(&line[..dash_pos]).unwrap_unchecked();
-                let right = u64::from_ascii(&line[dash_pos + 1..]).unwrap_unchecked();
-                range_mins.push_unchecked(left);
-                range_maxs.push_unchecked(right);
-            }
-            start = pos + 1;
-        }
-    }
-    let range_mins = range_mins.as_slice();
-    let range_maxs = range_maxs.as_slice();
-    let ranges_t1 = get_nanos_unchecked();
 
-    let fridge_t0 = get_nanos_unchecked();
-    {
-        let mut start = 0usize;
-        for pos in memchr::memchr_iter(b'\n', bfridge) {
-            unsafe {
+                let left = u64::from_ascii(line.get_unchecked(..dash_pos)).unwrap_unchecked();
+                let right =
+                    u64::from_ascii(line.get_unchecked(dash_pos + 1..)).unwrap_unchecked();
+                let i = ranges.len() as u8;
+                ranges.push_unchecked((left, right));
+
+                let low_mask = (left >> (50 - 11)) as u16;
+                let high_mask = (right >> (50 - 11)) as u16;
+                for b in low_mask..=high_mask {
+                    buckets.as_mut_slice().get_unchecked_mut(b as usize).push_unchecked(i)
+                }
+
+                start = pos + 1;
+            }
+        }
+
+        {
+            let mut start = 0usize;
+            for pos in memchr::memchr_iter(b'\n', bfridge) {
                 let line = bfridge.get_unchecked(start..pos);
                 fridge.push_unchecked(u64::from_ascii(line).unwrap_unchecked());
-            }
-            start = pos + 1;
-        }
-    }
-    let fridge_t1 = get_nanos_unchecked();
-
-    let tada_t0 = get_nanos_unchecked();
-    let mut fresh_count: u16 = 0;
-    for &ingredient in fridge.as_slice() {
-        for (&min, &max) in range_mins.iter().zip(range_maxs.iter()) {
-            if min <= ingredient && ingredient <= max {
-                fresh_count += 1;
-                break;
+                start = pos + 1;
             }
         }
+
+        let mut fresh_count: u16 = 0;
+        for &ingredient in fridge.as_slice() {
+            let mask = (ingredient >> (50 - 11)) as u16;
+            let indexes = buckets.as_slice().get_unchecked(mask as usize);
+
+            for &i in indexes.as_slice() {
+                // let min = *range_mins.get_unchecked(i as usize);
+                // let max = *range_maxs.get_unchecked(i as usize);
+                let (min, max) = *ranges.as_slice().get_unchecked(i as usize);
+                if min <= ingredient && ingredient <= max {
+                    fresh_count += 1;
+                    break;
+                }
+            }
+        }
+
+        fresh_count
     }
-    let tada_t1 = get_nanos_unchecked();
-
-    eprintf!("finding bounds: {}\n", bounds_t1 - bounds_t0);
-    eprintf!("parsing ranges: {}\n", ranges_t1 - ranges_t0);
-    eprintf!("parsing fridge: {}\n", fridge_t1 - fridge_t0);
-    eprintf!("big expensive loop: {}\n", tada_t1 - tada_t0);
-
-    fresh_count
 }
 
 use crate::prelude::*;

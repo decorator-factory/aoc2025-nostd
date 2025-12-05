@@ -25,6 +25,7 @@ panic = "abort"
 debug = "full"
 
 [dependencies]
+arrayvec = { version = "0.7.6", default-features = false } # only for temporary testing with ferris_elf, we have our own arrayvec
 libc = { version = "0.2", default-features = false }
 memchr = { version = "2", default-features = false }
 

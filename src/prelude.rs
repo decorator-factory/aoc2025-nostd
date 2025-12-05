@@ -214,6 +214,7 @@ pub fn get_nanos() -> i64 {
 }
 
 // it's supposed to be unsafe but whatever
+// assumes seconds is zero
 pub fn get_nanos_unchecked() -> i64 {
     let mut timespec = MaybeUninit::<libc::timespec>::uninit();
     unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC, timespec.as_mut_ptr()) };
@@ -397,7 +398,7 @@ where
 
 impl<T, const N: usize> ArrayVec<T, N> {
     #[inline(always)]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { data: [const { MaybeUninit::uninit() }; N], length: 0 }
     }
 
@@ -415,6 +416,16 @@ impl<T, const N: usize> ArrayVec<T, N> {
             self.length += 1;
             Ok(())
         }
+    }
+
+    #[inline(always)]
+    pub const unsafe fn zeroed() -> Self {
+        Self { data: [const { MaybeUninit::zeroed() }; N], length: N }
+    }
+
+    #[inline(always)]
+    pub const unsafe fn set_len(&mut self, length: usize) {
+        self.length = length;
     }
 
     #[inline(always)]
