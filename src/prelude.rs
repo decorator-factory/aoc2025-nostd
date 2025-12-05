@@ -326,6 +326,44 @@ impl Malloc {
     }
 }
 
+pub struct Boks<T> {
+    ptr: *mut T,
+}
+
+impl<T> Boks<T> {
+    pub fn new(value: T) -> Boks<T> {
+        const { assert!(core::mem::size_of::<T>() != 0, "we don't support ZSTs for now") };
+        let ptr = unsafe { libc::malloc(core::mem::size_of::<T>()) } as *mut T;
+        unsafe { core::ptr::write(ptr.cast(), value) };
+        Self { ptr }
+    }
+
+    pub fn deref(self) -> T {
+        unsafe { core::ptr::read(self.ptr.cast_const()) }
+    }
+
+    pub fn as_ref(&self) -> &T {
+        unsafe { self.ptr.as_ref_unchecked() }
+    }
+
+    pub fn as_mut(&mut self) -> &mut T {
+        unsafe { self.ptr.as_mut_unchecked() }
+    }
+}
+
+#[cfg(test)]
+mod test_box {
+    use super::Boks;
+
+    #[test]
+    fn simple() {
+        let b = Boks::new(69);
+        assert!(!b.ptr.is_null());
+        assert_eq!(b.as_ref(), &69);
+        assert_eq!(b.deref(), 69);
+    }
+}
+
 pub struct ArrayVec<T, const N: usize> {
     data: [MaybeUninit<T>; N],
     length: usize,
